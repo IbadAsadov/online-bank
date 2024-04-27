@@ -1,10 +1,13 @@
-import { Button, Form, FormProps, Input, Modal } from "antd";
-import { FC } from "react";
+import { Button, Form, FormProps, Input, Modal, Select, notification } from "antd";
+import { FC, useEffect } from "react";
+import { request } from "../../request";
+import { AccountType } from "../../pages/app/Accounts";
 
 
 interface MoneyTransferModalProps {
   isModalOpen: boolean;
   setIsModalOpen: (isOpen: boolean) => void;
+  accounts: AccountType[];
 }
 
 interface FormField {
@@ -13,16 +16,42 @@ interface FormField {
   amount: number;
 };
 
-const MoneyTransferModal: FC<MoneyTransferModalProps> = ({ isModalOpen, setIsModalOpen }) => {
+const MoneyTransferModal: FC<MoneyTransferModalProps> = ({ isModalOpen, setIsModalOpen, accounts }) => {
   const [form] = Form.useForm();
 
+  useEffect(() => {
+    form.resetFields();
+  }, [isModalOpen]);
 
 
-  const onFinish: FormProps<FormField>['onFinish'] = (values) => {
+
+  const onFinish: FormProps<FormField>['onFinish'] = async (values) => {
     console.log({ values });
 
-    form.resetFields();
-    setIsModalOpen(false);
+    try {
+
+      await request("post", "http://localhost:8084/api/v1/transfer", {
+        "transactionType": "TOP_UP",
+        "senderAccountNumber": values.senderAccountNumber,
+        "receiverAccountNumber": values.receiverAccountNumber,
+        "relatedTransactionId": null,
+        "amount": values.amount
+      })
+
+      notification.success({
+        message: "Money transferred successfully"
+      });
+      form.resetFields();
+      setIsModalOpen(false);
+    } catch (error: any) {
+      notification.error({
+        
+        message: error?.response?.data?.errorDetails?.length > 0
+          ? error?.response?.data?.errorDetails[0]?.message
+          : "Transfer processing failed"
+      });
+    }
+
   };
 
 
@@ -36,21 +65,21 @@ const MoneyTransferModal: FC<MoneyTransferModalProps> = ({ isModalOpen, setIsMod
         form={form}
 
       >
-        <Form.Item
-          name="senderAccountNumber"
-          rules={[
-            { required: true, message: "Please input sender account number" },
-            { len: 16, message: "Must be 16 characters" },
-          ]}
-        >
-          <Input placeholder="Sender account number" size="large" />
+
+        <Form.Item name="senderAccountNumber" rules={[{ required: true, message: "Please select sender account" }]}>
+          <Select
+            allowClear
+            style={{ width: "100%" }}
+            placeholder="Select currency"
+            options={accounts.map(account => ({ label: account.accountName + " - " + account.accountNumber, value: account.accountNumber }))}
+            size="large"
+          />
         </Form.Item>
 
         <Form.Item
           name="receiverAccountNumber"
           rules={[
-            { required: true, message: "Please input receiver account number" },
-            { len: 16, message: "Must be 16 characters" },
+            { required: true, message: "Please input receiver account number" }
           ]}
         >
           <Input placeholder="Receiver account number" size="large" />

@@ -1,6 +1,7 @@
-import { Button, Typography, Col, Flex, Form, Input, Row, FormProps, Select } from "antd";
+import { Button, Typography, Col, Flex, Form, Input, Row, FormProps, Select, notification } from "antd";
 import { currencies, statuses } from "../../constants";
 import { useNavigate } from "react-router-dom";
+import { request } from "../../request";
 
 const { Title } = Typography;
 
@@ -15,10 +16,28 @@ const CreateAccount = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
 
-  const onFinish: FormProps<FormField>['onFinish'] = (values: any) => {
+  const onFinish: FormProps<FormField>['onFinish'] = (values) => {
     console.log('Received values:', values);
-    form.resetFields();
-    navigate("/");
+    try {
+      request('post', 'http://localhost:8087/api/v1/accounts', {
+        accountName: values.accountName,
+        currency: values.currency,
+        accountStatus: values.status,
+      });
+
+      notification.success({
+        message: "Account created successfully"
+      });
+
+      form.resetFields();
+      navigate("/");
+    } catch (error: any) {
+      console.log({ error });
+
+      notification.error({
+        message: "Failed to create account"
+      });
+    }
   };
 
   const handleBack = () => {
@@ -38,6 +57,7 @@ const CreateAccount = () => {
             name="create-account-form"
             initialValues={{ remember: true }}
             onFinish={onFinish}
+            form={form}
           >
             <Form.Item
               name="accountName"

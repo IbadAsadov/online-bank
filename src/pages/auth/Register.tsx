@@ -1,18 +1,35 @@
 import { FC } from 'react';
-import { Button, Card, Col, Form, FormProps, Input, Row } from 'antd';
+import { Button, Card, Col, Form, FormProps, Input, Row, notification } from 'antd';
 import { KeyOutlined, UserOutlined } from '@ant-design/icons';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { request } from '../../request';
+
 
 
 interface FormField {
   pin: string;
   password: string;
-};
+}
 
 const Register: FC = () => {
 
-  const onFinish: FormProps<FormField>['onFinish'] = (values) => {
-    console.log('Success:', values);
+  const [form] = Form.useForm();
+  const navigate = useNavigate();
+
+  const onFinish: FormProps<FormField>['onFinish'] = async (values) => {
+    try {
+      const response = await request('post', 'http://localhost:8081/api/v1/auth/register', values);
+
+      notification.success({
+        message: response.data,
+      });
+      form.resetFields();
+      navigate("/login")
+    } catch (error: any) {
+      notification.error({
+        message: error.response?.data?.error
+      });
+    }
   };
 
   return (
@@ -23,6 +40,7 @@ const Register: FC = () => {
             name="register-form"
             onFinish={onFinish}
             autoComplete="off"
+            form={form}
           >
             <Form.Item
               name="pin"

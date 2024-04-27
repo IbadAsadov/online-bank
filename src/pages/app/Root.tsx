@@ -26,6 +26,8 @@ const RootPage: FC = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("pin");
     navigate("/login");
   }
 
